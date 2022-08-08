@@ -1,0 +1,491 @@
+openapi: 3.0.0
+info:
+  title: ADA Space API
+  version: '1.0'
+
+servers:
+  - description: Main Server
+    url: http://adaspace.local
+  - description: Local Server
+    url: http://localhost:8080
+
+paths:
+
+  /users:
+    get:
+      tags:
+          - Users
+      summary: Get all users
+      responses:
+        '200':
+          description: A list of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+    post:
+      tags:
+        - Users
+      summary: Create a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: A user session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+                  
+  /users/{id}:
+    get:
+      tags:
+          - Users
+      summary: Get a user specified by the requested ID
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the user to get
+      responses:
+        '200':
+          description: A user object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              
+  /users/login:
+    post:
+      tags:
+          - Users
+      summary: Login with an existing user
+      security:
+        - BasicAuth: []
+      responses:
+        '200':
+          description: A user session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+                        
+  /users/logout:
+    post:
+      tags:
+          - Users
+      summary: Logout the current authenticated user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: A user session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+
+  /users/avatar:
+    put:
+      tags:
+          - Users
+      summary: Update current authenticated user avatar
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          image/png:
+            schema:
+              type: string
+              format: binary
+          image/jpeg:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: A user object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+    delete:
+      tags:
+          - Users
+      summary: Delete current authenticated user avatar
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: A user object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    
+          
+  /users/me:
+    get:
+      tags:
+          - Users
+      summary: Get current authenticated user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: A user json object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+      
+  /posts:
+    get:
+      tags:
+          - Posts
+      summary: Get all posts
+      parameters:
+        - in: query
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+          description: Filter by the given user ID
+      responses:
+        '200':
+          description: A list of posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Post'
+                  
+    post:
+      tags:
+         - Posts
+      summary: Create a new post on behalf of current authenticated user
+      security:
+          - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+              description: The content of the post
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: A post json object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+          
+  /posts/{id}:
+    get:
+      tags:
+          - Posts
+      summary: Get a post specified by the requested ID
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the post to get
+      responses:
+        '200':
+          description: A post json object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+    patch:
+      tags:
+          - Posts
+      summary: Update a post specified by the requested ID
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the post to update
+      security:
+          - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+      responses:
+        '200':
+          description: A post json object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+    
+    delete:
+      tags:
+          - Posts
+      summary: Delete a post specified by the requested ID
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the post to delete
+      security:
+          - BearerAuth: []
+      responses:
+        '200':
+          description: A post json object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+          
+  /posts/paginated:
+    get:
+      tags:
+          - Posts
+      summary: Get all posts with paginated response
+      parameters:
+        - in: query
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+          description: Filter by the given user id
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: The number of the page
+        - in: query
+          name: per
+          schema:
+            type: integer
+            default: 10
+          description: The number of items per page
+      responses:
+        '200':
+          description: A list of posts and pagination metadata
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/Page'
+          
+          
+  /likes/liking_users/{post_id}:
+    get:
+      tags:
+          - Likes
+      summary: Get a post liking users
+      parameters:
+        - in: path
+          name: post_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the post to request liking users of
+      responses:
+        '200':
+          description: A user json object
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+                  
+  /likes/liked_posts/{user_id}:
+    get:
+      tags:
+          - Likes
+      summary: Get a user liked posts
+      parameters:
+        - in: path
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the user to request liked posts for.
+      responses:
+        '200':
+          description: A list of posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Post'
+                  
+  /likes:
+    post:
+      tags:
+         - Likes
+      summary: Like the target post on behalf of the authenticated user
+      security:
+          - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+              format: uuid
+              description: ID of the post to like
+      responses:
+        '204':
+          description: The post was successfully liked
+          
+  /likes/{post_id}:
+    delete:
+      tags:
+         - Likes
+      summary: Unlike the target post on behalf of the authenticated user
+      security:
+          - BearerAuth: []
+      parameters:
+        - in: path
+          name: post_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the post to unlike
+      responses:
+        '204':
+          description: The post was successfully unliked
+          
+components:
+  schemas:
+  
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The user ID.
+        name:
+          type: string
+          description: The user name.
+        email:
+          type: string
+          format: email
+          description: The user email.
+        avatar:
+          type: string
+          description: The user avatar media path.
+      required:
+        - id
+        - name
+        - email
+          
+    Session:
+      type: object
+      properties:
+        token:
+          type: string
+          example: 23rg8cSx5n8UNkItcoYWqA==
+        user:
+          $ref: '#/components/schemas/User'
+  
+    Post:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The post ID.
+        content:
+          type: string
+          description: The post content.
+        user_id:
+          type: string
+          format: uuid
+          description: The post user ID.
+        # user:
+        #   $ref: '#/components/schemas/User'
+        created_at:
+          type: string
+          format: date-time
+          description: The post creation timestamp.
+        updated_at:
+          type: string
+          format: date-time
+          description: The post update timestamp.
+      required:
+        - id
+        - content
+        - user_id
+        - created_at
+        
+    Page:
+      type: object
+      properties:
+        items:
+          type: array
+          description: The page's items.
+          items:
+            $ref: '#/components/schemas/Post'
+        metadata:
+          type: object
+          properties:
+            page:
+              type: integer
+              description: Current page number. Starts at `1`.
+            per:
+              type: integer
+              description: Max items per page.
+            total:
+              type: integer
+              description: Total number of pages.
+              
+  securitySchemes:
+      BasicAuth:
+        type: http
+        scheme: basic
+      BearerAuth:
+        type: http
+        scheme: bearer
+        bearerFormat: JWT
