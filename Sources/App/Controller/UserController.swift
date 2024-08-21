@@ -15,6 +15,8 @@ struct UserController: RouteCollection {
                 $0.post("logout", use: logout)
             }
             $0.grouped(User.authenticator()).post("login", use: login)
+            
+            $0.post("mock", use: mock_create)
         }
     }
     
@@ -40,6 +42,15 @@ struct UserController: RouteCollection {
         try await token.save(on: req.db)
         let session = Session(token: token.value, user: user.public)
         return session
+    }
+    
+    func mock_create(req: Request) async throws -> Response {
+        let input = try req.content.decode([User.Input].self)
+        let users = try input.map({ try User($0) })
+        for user in users {
+            try await user.save(on: req.db)
+        }
+        return Response(status: .created)
     }
     
     func current(req: Request) throws -> User.Public {

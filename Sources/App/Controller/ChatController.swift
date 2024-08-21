@@ -1,3 +1,10 @@
+//
+//  File.swift
+//  
+//
+//  Created by Mateus Rodrigues on 07/08/22.
+//
+
 import Vapor
 
 class ChatController: RouteCollection {
@@ -21,9 +28,6 @@ class ChatController: RouteCollection {
                 } catch {
                     print(error)
                 }
-            }
-            socket.onClose.whenComplete { result in
-                self.connections.remove(connection)
             }
         } catch {
             print(error)

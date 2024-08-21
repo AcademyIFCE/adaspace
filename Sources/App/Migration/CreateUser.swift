@@ -7,10 +7,13 @@ struct CreateUser: AsyncMigration {
             .schema(User.schema)
             .id()
             .field("name", .string)
-            .field("email", .string)
             .field("avatar", .string)
-            .unique(on: "email")
+            .field("username", .string)
             .field("password", .string)
+            .unique(on: "username")
+            .constraint(.sql(raw: "CHECK (LENGTH(name) >= 1)"))
+            .constraint(.sql(raw: "CHECK (LENGTH(username) >= 5)"))
+            .constraint(.sql(raw: "CHECK (LENGTH(password) >= 5)"))
             .create()
     }
     

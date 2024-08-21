@@ -14,15 +14,17 @@ struct PostController: RouteCollection {
                 $0.delete(":id", use: delete)
             }
             $0.get("paginated", use: indexPaginated)
+            $0.post("mock", use: mock_create)
         }
     }
     
     func index(req: Request) async throws -> [Post.Public] {
-        let query: QueryBuilder<Post>
+        var query = Post.query(on: req.db).sort(\.$createdAt, .descending)
+        if req.query[String.self, at: "expand"] == "user_id" {
+            query = query.with(\.$user)
+        }
         if let userID = req.query[User.IDValue.self, at: "user_id"] {
-            query = Post.query(on: req.db).with(\.$user).sort(\.$createdAt, .descending).filter(\.$user.$id == userID)
-        } else {
-            query = Post.query(on: req.db).with(\.$user).sort(\.$createdAt, .descending)
+            query = query.filter(\.$user.$id == userID)
         }
         return try await query.all().map(\.public)
     }
@@ -41,12 +43,12 @@ struct PostController: RouteCollection {
         switch req.headers.contentType {
             case .plainText?:
                 let content = try req.content.decode(String.self)
-                let post = try Post(content: content, userID: user.requireID())
+                let post = try Post(text: content, userID: user.requireID())
                 try await post.save(on: req.db)
                 return post.public
             case .formData?:
                 let form = try req.content.decode(Post.Form.self)
-            guard let contentType = form.media?.contentType, [.png, .jpeg, .mpeg].contains(contentType) else {
+            guard let contentType = form.media?.contentType, [.any].contains(contentType) else {
                     throw Abort(.unsupportedMediaType)
                 }
                 let post = try Post(form: form, userID: user.requireID())
@@ -57,10 +59,29 @@ struct PostController: RouteCollection {
         }
     }
     
+    func mock_create(req: Request) async throws -> Response {
+        
+        let inputs = try req.content.decode([Post.Mock.Input].self)
+        
+        let users = try await User.query(on: req.db).all()
+        
+        guard !users.isEmpty else {
+            throw Abort(.internalServerError)
+        }
+        
+        for input in inputs {
+            let post = try Post.Mock(text: input.text, userID: users.randomElement()!.requireID(), createdAt: input.createdAt)
+            try await post.save(on: req.db)
+        }
+        
+        return Response(status: .created)
+        
+    }
+    
     func update(req: Request) async throws -> Post {
         let id = try req.parameters.require("id", as: Post.IDValue.self)
         if let post = try await Post.find(id, on: req.db) {
-            post.content = try req.content.decode(String.self)
+            post.text = try req.content.decode(String.self)
             try await post.update(on: req.db)
             return post
         } else {

@@ -8,11 +8,11 @@ final class User: Model {
     @ID(key: .id)
     var id: UUID?
     
+    @Field(key: "username")
+    var username: String
+    
     @Field(key: "name")
     var name: String
-    
-    @Field(key: "email")
-    var email: String
     
     @Field(key: "avatar")
     var avatar: String?
@@ -25,9 +25,9 @@ final class User: Model {
     
     init() { }
     
-    init(name: String, email: String, avatar: String?, password: String) {
+    init(username: String, name: String, avatar: String?, password: String) {
+        self.username = username
         self.name = name
-        self.email = email
         self.avatar = avatar
         self.password = password
     }
@@ -39,24 +39,24 @@ extension User: Content { }
 extension User {
     
     struct Input: Content {
+        var username: String
         var name: String
-        var email: String
         var password: String
     }
     
     struct Public: Content {
         var id: UUID?
+        var username: String
         var name: String
         var avatar: String?
-        var email: String
     }
     
     convenience init(_ input: Input) throws {
-        self.init(name: input.name, email: input.email, avatar: nil, password: try Bcrypt.hash(input.password))
+        self.init(username: input.username, name: input.name, avatar: nil, password: try Bcrypt.hash(input.password))
     }
     
     var `public`: Public {
-        Public(id: self.id, name: self.name, avatar: self.avatar, email: self.email)
+        Public(id: self.id, username: self.username, name: self.name, avatar: self.avatar)
     }
     
 }
@@ -74,7 +74,7 @@ extension User {
 
 extension User: ModelAuthenticatable {
     
-    static let usernameKey = \User.$email
+    static let usernameKey = \User.$username
     static let passwordHashKey = \User.$password
     
     func verify(password: String) throws -> Bool {
