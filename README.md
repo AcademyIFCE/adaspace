@@ -57,4 +57,16 @@ Once running you should see the following message in the Xcode console:
 
 `[ NOTICE ] Server starting on http://127.0.0.1:8080`
 
+## Acessing local service from other devices (during development)
+
+Inside the `main.swift` file, after the app is instantiated, add
+
+```swift
+app.http.server.configuration.hostname = "0.0.0.0"
+```
+
+This will allow the server to be discoverable by other devices in the same network as your computer (your iPhone, for instance). 
+
+After doing that, on the client side where you do the API call, just change `127.0.0.1` or `localhost` to your computer's IP or hostname in the network.
+
 
