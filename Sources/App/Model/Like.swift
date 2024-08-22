@@ -16,14 +16,28 @@ final class Like: Model {
     
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
-    
+
+    @Field(key: "reaction")
+    var reaction: String?
+
     init() { }
     
-    init(userID: User.IDValue, postID: Post.IDValue) {
+    init(userID: User.IDValue, postID: Post.IDValue, reaction: String?) {
         self.$user.id = userID
         self.$post.id = postID
+        self.reaction = reaction
     }
-    
+
+    var `public`: Public {
+        Public(
+            id: id!,
+            reaction: reaction,
+            postID: $post.id,
+            userID: $user.id,
+            user: $user.value?.public
+        )
+    }
+
 }
 
 extension Like: Content { }
@@ -39,5 +53,14 @@ extension Like {
         }
 
     }
-    
+
+    struct Public: Content {
+        var id: UUID
+        var reaction: String?
+        var postID: UUID
+        var userID: UUID
+        var user: User.Public?
+        var createdAt: Date?
+    }
+
 }

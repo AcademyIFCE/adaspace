@@ -9,6 +9,7 @@ struct UpdateLike: AsyncMigration {
             .field("user_id", .uuid)
             .field("post_id", .uuid)
             .field("created_at", .datetime)
+            .field("reaction", .string)
             .foreignKey("user_id", references: User.schema, "id", onDelete: .cascade, onUpdate: .cascade)
             .foreignKey("post_id", references: Post.schema, "id", onDelete: .cascade, onUpdate: .cascade)
             .create()

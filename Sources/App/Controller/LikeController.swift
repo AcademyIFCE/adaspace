@@ -5,34 +5,58 @@ struct LikeController: RouteCollection {
 
     func boot(routes: RoutesBuilder) throws {
         routes.group("likes") {
+            $0.get(":post_id", use: likesForPost)
             $0.get("liking_users", ":post_id", use: likingUsers)
             $0.get("liked_posts", ":user_id", use: likedPosts)
-            $0.grouped(Token.authenticator()).post(use: like)
+            $0.grouped(Token.authenticator()).post(":post_id", use: like)
             $0.grouped(Token.authenticator()).delete(":post_id", use: unlike)
             $0.get("mock", ":count", use: mock_like)
         }
     }
     
+    func likesForPost(req: Request) async throws -> [Like.Public] {
+        guard let postID = req.parameters.get("post_id", as: UUID.self) else {
+            throw Abort(.badRequest)
+        }
+        var query = Like.query(on: req.db)
+            .filter(\.$post.$id == postID)
+            .sort(\.$createdAt, .descending)
+        if req.query[String.self, at: "expand"] == "user_id" {
+            query = query.with(\.$user)
+        }
+        return try await query.all().map(\.public)
+    }
+
     func like(req: Request) async throws -> Response {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
-        let postID = try req.content.decode(UUID.self)
+        let reaction = try req.content.decode(String?.self)
+        if let reaction, reaction.count > 1 {
+            throw Abort(.badRequest)
+        }
+        guard let postID = req.parameters.get("post_id", as: UUID.self) else {
+            throw Abort(.badRequest)
+        }
         guard let post = try await Post.find(postID, on: req.db) else {
             throw Abort(.notFound)
         }
-        if let _ = try await Like.query(on: req.db).filter(\.$post.$id == postID).filter(\.$user.$id == userID).first() {
+        if let _ = try await Like.query(on: req.db)
+            .filter(\.$post.$id == postID)
+            .filter(\.$user.$id == userID)
+            .first() {
             return Response(status: .conflict)
         } else {
-            
-            let like = try Like(userID: user.requireID(), postID: post.requireID())
-            
+            let like = try Like(
+                userID: user.requireID(),
+                postID: post.requireID(),
+                reaction: reaction
+            )
             post.likeCount += 1
-            
             try await req.db.transaction {
                 try await like.save(on: $0)
                 try await post.save(on: $0)
             }
-            
+
             return Response(status: .noContent)
         }
     }
@@ -67,7 +91,11 @@ struct LikeController: RouteCollection {
                 continue
             }
             
-            let like = try Like(userID: user.requireID(), postID: post.requireID())
+            let like = try Like(
+                userID: user.requireID(),
+                postID: post.requireID(),
+                reaction: nil
+            )
             
             post.likeCount += 1
 
