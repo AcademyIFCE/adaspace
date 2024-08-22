@@ -12,7 +12,9 @@ struct CreatePost: AsyncMigration {
             .field("created_at", .datetime)
             .field("updated_at", .datetime)
             .field("user_id", .uuid)
+            .field("parent_id", .uuid)
             .foreignKey("user_id", references: User.schema, "id", onDelete: .cascade, onUpdate: .cascade)
+            .foreignKey("parent_id", references: Post.schema, "id", onDelete: .cascade, onUpdate: .cascade)
             .create()
     }
     

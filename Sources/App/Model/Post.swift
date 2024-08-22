@@ -19,6 +19,9 @@ final class Post: Model {
     
     @Parent(key: "user_id")
     var user: User
+  
+    @OptionalParent(key: "parent_id")
+    var parent: Post?
     
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
@@ -28,24 +31,26 @@ final class Post: Model {
     
     init() {}
     
-    init(text: String, media: String? = nil, userID: User.IDValue) {
+    init(text: String, media: String? = nil, userID: User.IDValue, parentID: Post.IDValue? = nil) {
         self.text = text
         self.media = media
         self.likeCount = 0
         self.$user.id = userID
+        self.$parent.id = parentID
     }
     
-    init(form: Form, userID: User.IDValue) {
+    init(form: Form, userID: User.IDValue, parentID: Post.IDValue? = nil) {
         self.text = form.text
         if let media = form.media {
             self.media = try? media.data.write(to: URL(fileURLWithPath: DirectoryConfiguration.detect().publicDirectory), contentType: media.contentType)
         }
         self.likeCount = 0
         self.$user.id = userID
+        self.$parent.id = parentID
     }
     
     var `public`: Public {
-        Public(id: id!, text: text, media: media, likeCount: likeCount, createdAt: createdAt, updatedAt: updatedAt, userID: $user.id, user: $user.value?.public)
+        .init(id: id!, text: text, media: media, likeCount: likeCount, createdAt: createdAt, updatedAt: updatedAt, userID: $user.id, user: $user.value?.public)
     }
     
 }

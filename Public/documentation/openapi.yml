@@ -310,7 +310,52 @@ paths:
             application/json:
               schema:
                   $ref: '#/components/schemas/Page'
-          
+                  
+  /posts/comments/{id}:
+    get:
+      tags:
+          - Posts
+      summary: Get all comments of a post specified by the requested ID
+      responses:
+        '200':
+          description: A list of posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Post'
+    post:
+      tags:
+        - Posts
+      summary: Create a new post on behalf of current authenticated user as comment of a post specified by the requested ID
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the post to comment
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+              description: The content of the post
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                media:
+                  type: string
+                  format: binary
+
           
   /likes/liking_users/{post_id}:
     get:

@@ -8,13 +8,49 @@ struct PostController: RouteCollection {
         routes.group("posts") {
             $0.get(use: index)
             $0.get(":id", use: show)
+            $0.get("comments", ":id", use: getComments)
             $0.group(Token.authenticator()) {
                 $0.post(use: create)
                 $0.patch(":id", use: update)
                 $0.delete(":id", use: delete)
+                $0.post("comments", ":id", use: createComment)
             }
             $0.get("paginated", use: indexPaginated)
             $0.post("mock", use: mock_create)
+        }
+    }
+    
+    func getComments(req: Request) async throws -> [Post.Public] {
+        var query = Post.query(on: req.db).sort(\.$createdAt, .descending)
+        let id = try req.parameters.require("id", as: Post.IDValue.self)
+        if req.query[String.self, at: "expand"] == "user_id" {
+            query = query.with(\.$user)
+        }
+        query.filter(\.$parent.$id == id)
+        return try await query.all().map(\.public)
+    }
+    
+    
+    
+    func createComment(req: Request) async throws -> Post.Public {
+        let user = try req.auth.require(User.self)
+        let id = try req.parameters.require("id", as: Post.IDValue.self)
+        switch req.headers.contentType {
+            case .plainText?:
+                let content = try req.content.decode(String.self)
+                let post = try Post(text: content, userID: user.requireID(), parentID: id)
+                try await post.save(on: req.db)
+                return post.public
+            case .formData?:
+                let form = try req.content.decode(Post.Form.self)
+                guard let contentType = form.media?.contentType, [.any].contains(contentType) else {
+                    throw Abort(.unsupportedMediaType)
+                }
+                let post = try Post(form: form, userID: user.requireID(), parentID: id)
+                try await post.save(on: req.db)
+                return post.public
+            default:
+                throw Abort(.badRequest)
         }
     }
     
@@ -26,6 +62,7 @@ struct PostController: RouteCollection {
         if let userID = req.query[User.IDValue.self, at: "user_id"] {
             query = query.filter(\.$user.$id == userID)
         }
+        query.filter(\.$parent.$id == nil)
         return try await query.all().map(\.public)
     }
     
@@ -48,7 +85,7 @@ struct PostController: RouteCollection {
                 return post.public
             case .formData?:
                 let form = try req.content.decode(Post.Form.self)
-            guard let contentType = form.media?.contentType, [.any].contains(contentType) else {
+                guard let contentType = form.media?.contentType, [.any].contains(contentType) else {
                     throw Abort(.unsupportedMediaType)
                 }
                 let post = try Post(form: form, userID: user.requireID())
