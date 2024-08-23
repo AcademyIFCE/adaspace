@@ -439,26 +439,24 @@ paths:
               type: string
               description: The reason of the report
                   
-  /likes:
+  /likes/{post_id}:
     post:
       tags:
          - Likes
       summary: Like the target post on behalf of the authenticated user
       security:
           - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          text/plain:
-            schema:
-              type: string
-              format: uuid
-              description: ID of the post to like
+      parameters:
+        - in: path
+          name: post_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the post to like
       responses:
         '204':
           description: The post was successfully liked
-          
-  /likes/{post_id}:
     delete:
       tags:
          - Likes
