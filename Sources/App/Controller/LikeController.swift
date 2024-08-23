@@ -30,7 +30,7 @@ struct LikeController: RouteCollection {
     func like(req: Request) async throws -> Response {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
-        let reaction = try req.content.decode(String?.self)
+        let reaction = try? req.content.decode(String.self)
         if let reaction, reaction.count > 1 {
             throw Abort(.badRequest)
         }

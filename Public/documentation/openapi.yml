@@ -440,12 +440,31 @@ paths:
               description: The reason of the report
                   
   /likes/{post_id}:
+    get:
+      tags:
+          - Likes
+      summary: Get all likes from a specified post
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the post to get the likes
+      responses:
+        '200':
+          description: Array of likes json objects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Like'
     post:
       tags:
          - Likes
       summary: Like the target post on behalf of the authenticated user
-      security:
-          - BearerAuth: []
       parameters:
         - in: path
           name: post_id
@@ -561,7 +580,34 @@ components:
             total:
               type: integer
               description: Total number of pages.
-              
+
+    Like:
+      type: object
+      properties:
+        reaction:
+          type: string
+          description: a single emoji representing a reaction. This field is optional.
+        post_id:
+          type: string
+          format: uuid
+          description: The post user ID.
+        user_id:
+          type: string
+          format: uuid
+          description: The user ID.
+        id:
+          type: string
+          format: uuid
+          description: The like ID.
+        user:
+          $ref: '#/components/schemas/User'
+      required:
+        - id
+        - post_id
+        - user_id
+        - created_at
+
+
   securitySchemes:
       BasicAuth:
         type: http
