@@ -196,7 +196,7 @@ paths:
             schema:
               type: object
               properties:
-                content:
+                text:
                   type: string
                 media:
                   type: string
@@ -473,6 +473,14 @@ paths:
             format: uuid
           required: true
           description: ID of the post to like
+      requestBody:
+        required: false
+        content:
+          text/plain:
+            schema:
+              type: string
+              description: The like reaction
+              example: ❤️
       responses:
         '204':
           description: The post was successfully liked
@@ -537,6 +545,9 @@ components:
         text:
           type: string
           description: The post text.
+        media:
+          type: string
+          description: The post media path.
         user_id:
           type: string
           format: uuid

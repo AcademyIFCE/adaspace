@@ -29,6 +29,10 @@ public func configure(_ app: Application) throws {
     app.migrations.add(CreateReport())
     app.migrations.add(CreateToken())
     
+    if !FileManager.default.fileExists(atPath: app.directory.publicDirectory + "media") {
+        try FileManager.default.createDirectory(atPath: app.directory.publicDirectory + "media", withIntermediateDirectories: true)
+    }
+    
     let encoder = JSONEncoder()
     encoder.keyEncodingStrategy = .convertToSnakeCase
     encoder.dateEncodingStrategy = .iso8601
